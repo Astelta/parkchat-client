@@ -25,6 +25,7 @@ type Config struct {
 	MessagePrefix   string `json:"message_prefix"`
 	TimestampFormat string `json:"timestamp_format"`
 	Prompt          string `json:"prompt"`
+	Socket          string `json:"websocket_port"`
 }
 
 // Message
@@ -49,7 +50,8 @@ var displayChan chan Message
 var mu sync.Mutex
 
 // Global values
-var serverIP = "localhost"
+var port = "8080"
+var serverIP = "chat.astelta.world"
 var timestampFormat = "15:04"
 var messagePrefix = ""
 var prompt = "> "
@@ -73,6 +75,9 @@ func main() {
 		}
 		if config.Prompt != "" {
 			prompt = config.Prompt
+		}
+		if config.Socket != "" {
+			port = config.Socket
 		}
 
 		displayChan = make(chan Message, 10)
@@ -134,7 +139,7 @@ func connectToRoom(room string) {
 		"Authorization": {auth},
 	}
 
-	u := url.URL{Scheme: "ws", Host: serverIP, Path: "/ws/" + room}
+	u := url.URL{Scheme: "ws", Host: serverIP + ":" + port, Path: "/ws/" + room}
 	dialer := websocket.DefaultDialer
 	var err error
 	conn, _, err = dialer.Dial(u.String(), header)
