@@ -210,7 +210,7 @@ func readMessages() {
 		var msg Message
 		err := currentConn.ReadJSON(&msg)
 		if err != nil {
-			// jeśli połączenie zostało zamknięte celowo (zmiana pokoju), nie spamuj
+			// If /room was used
 			if websocket.IsCloseError(err,
 				websocket.CloseNormalClosure,
 				websocket.CloseGoingAway) || strings.Contains(err.Error(), "use of closed network connection") {

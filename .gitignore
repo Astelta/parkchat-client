@@ -7,6 +7,8 @@
 *.dll
 *.so
 *.dylib
+parkchat-client-linux.*
+parkchat-client-windows.*
 
 # Test binary, built with `go test -c`
 *.test
