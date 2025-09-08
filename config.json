@@ -1,0 +1,9 @@
+{
+  "nickname": "Test46",
+  "password": "test",
+  "start_room": "Ogolny",
+  "server_ip": "localhost:8080",
+  "message_prefix": "",
+  "timestamp_format": "02/01 15:04",
+  "prompt": ":) (: "
+}
