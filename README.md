@@ -27,7 +27,7 @@ It connects to a chat server with authentication, supports multiple rooms, and a
 Clone the repository and build the client:
 
 ```bash
-git clone https://github.com/yourname/parkchat-client.git
+git clone https://github.com/Astelta/parkchat-client.git
 cd parkchat-client
 go build -o parkchat-client
 ```
