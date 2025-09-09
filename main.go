@@ -88,9 +88,9 @@ func main() {
 		}
 
 		displayChan = make(chan Message, 10)
-		go displayLoop()
-		go readMessages()
 		connectToRoom(chat_room)
+		go readMessages()
+		go displayLoop()
 
 	} else {
 		log.Println("❌ Error loading config.json:", err)
@@ -111,9 +111,9 @@ func main() {
 		chat_room = strings.TrimSpace(chat_room)
 
 		displayChan = make(chan Message, 10)
-		go displayLoop()
-		go readMessages()
 		connectToRoom(chat_room)
+		go readMessages()
+		go displayLoop()
 	}
 	startPingRoutine()
 	chatLoop()
@@ -133,6 +133,10 @@ func loadConfig() (Config, error) {
 		return config, fmt.Errorf("error decoding config: %w", err)
 	}
 	return config, nil
+}
+
+func showPrompt() {
+	fmt.Print(prompt)
 }
 
 func connectToRoom(room string) {
@@ -185,21 +189,15 @@ func connectToRoom(room string) {
 	} else {
 		log.Printf("Error downloading history: %s\n", resp.Status)
 	}
-
-	showPrompt()
 }
 
 func displayLoop() {
 	for msg := range displayChan {
 		displayMessage(msg, true)
-		showPrompt()
 	}
 }
 
 func displayMessage(msg Message, clearPrompt bool) {
-	if clearPrompt {
-		fmt.Fprint(out, "\r\033[K")
-	}
 
 	// timestamp w niebieskim
 	ts := fmt.Sprintf("\033[34m%s\033[0m", msg.Timestamp.Format(timestampFormat))
@@ -207,11 +205,9 @@ func displayMessage(msg Message, clearPrompt bool) {
 	nick := fmt.Sprintf("\033[32m%s\033[0m", msg.Nickname)
 
 	fmt.Fprintf(out, "%s[%s] %s: %s\n", messagePrefix, ts, nick, msg.Content)
-}
-
-func showPrompt() {
-	fmt.Print("\r\033[K")
-	fmt.Print(prompt)
+	if clearPrompt {
+		showPrompt()
+	}
 }
 
 func startPingRoutine() {
@@ -286,7 +282,7 @@ func chatLoop() {
 				connectToRoom(newRoom)
 			}
 		} else if text != "" {
-			fmt.Print(out, "\033[1A\r\033[K")
+			fmt.Fprint(out, "\033[1A\r\033[K")
 
 			msg := Message{
 				Content:   text,
@@ -303,8 +299,6 @@ func chatLoop() {
 				}
 			}
 			mu.Unlock()
-
-			fmt.Print(prompt)
 		}
 	}
 }

@@ -5,6 +5,6 @@
   "server_ip": "chat.astelta.world",
   "message_prefix": "",
   "timestamp_format": "02/01 15:04",
-  "prompt": "",
+  "prompt": "> ",
   "websocket_port": "8080"
 }
