@@ -32,7 +32,7 @@ cd parkchat-client
 go build -o parkchat-client
 ```
 
-Or download a binary.
+Or download a binary from the release page: [release page](https://github.com/Astelta/parkchat-client/releases/).
 
 Run the client:
 
