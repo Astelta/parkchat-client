@@ -48,6 +48,8 @@ Run the client:
 Before using the client, you must create an account on the server.
 This is done with a `POST` request to the `/register` endpoint.
 
+### [**Or via this site**](https://parkchat.astelta.world)
+
 ### Linux/macOS (using `curl`):
 
 ```bash
