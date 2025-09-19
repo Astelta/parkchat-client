@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/inconshreveable/go-update"
 	"github.com/mattn/go-colorable"
 )
 
@@ -39,6 +41,17 @@ type Message struct {
 	Type      string    `json:"type"`
 }
 
+// Github response
+type ReleaseInfo struct {
+	Tagname string  `json:"tag_name"`
+	Assets  []Asset `json:"assets"`
+}
+
+type Asset struct {
+	Name        string `json:"name"`
+	DownloadUrl string `json:"browser_download_url"`
+}
+
 // User
 type User struct {
 	Nickname string
@@ -59,8 +72,10 @@ var serverIP = "chat.astelta.world"
 var timestampFormat = "15:04"
 var messagePrefix = ""
 var prompt = "> "
+var appVersion = "v1.0.2"
 
 func main() {
+
 	reader = bufio.NewReader(os.Stdin)
 
 	config, err := loadConfig()
@@ -227,6 +242,69 @@ func startPingRoutine() {
 	}()
 }
 
+func CheckForupdate() {
+	req, err := http.NewRequest("GET", "https://api.github.com/repos/Astelta/parkchat-client/releases/latest", nil)
+	if err != nil {
+		log.Println("Error creating a web request:", err)
+		return
+	}
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println("Error fetching the update data:", err)
+		return
+	}
+	defer resp.Body.Close()
+	var values ReleaseInfo
+	json.NewDecoder(resp.Body).Decode(&values)
+	if values.Tagname == appVersion {
+		fmt.Print("You have the latest version: ", values.Tagname)
+	} else {
+		fmt.Print("Your version is: ", appVersion, "\nThere is newer version you can upgrade to: ", values.Tagname, "\nDo you want to upgrade? (Y/N):\n")
+		showPrompt()
+		for {
+			text, _ := reader.ReadString('\n')
+			text = strings.TrimSpace(text)
+
+			switch text {
+			case "Y":
+				i := 0
+				for range values.Assets {
+					if strings.Contains(values.Assets[i].Name, runtime.GOOS) {
+						fmt.Print("Updating... \n")
+						doUpdate(values.Assets[i].DownloadUrl)
+						fmt.Print("Update complete! The app will close now.")
+						time.Sleep(200)
+						os.Exit(0)
+					} else {
+						i++
+					}
+				}
+				fmt.Print("I couldn't find a binary for your platform. Try compiling the source code from: https://github.com/Astelta/parkchat-client \n!")
+				return
+			case "N":
+				fmt.Print("Sure thing boss! \n")
+				showPrompt()
+				return
+			default:
+				fmt.Print("Im not sure what are you trying to do...")
+			}
+		}
+	}
+}
+
+func doUpdate(url string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	err = update.Apply(resp.Body, update.Options{OldSavePath: ""})
+	if err != nil {
+	}
+	return err
+}
+
 func readMessages() {
 	for {
 		mu.Lock()
@@ -277,10 +355,14 @@ func chatLoop() {
 			fmt.Println("👋 Logged out.")
 			os.Exit(0)
 		} else if strings.HasPrefix(text, "/room ") {
+			fmt.Fprint(out, "\033[1A\r\033[K")
 			newRoom := strings.TrimSpace(strings.TrimPrefix(text, "/room "))
 			if newRoom != "" {
 				connectToRoom(newRoom)
 			}
+		} else if text == "/update" {
+			fmt.Fprint(out, "\033[1A\r\033[K")
+			CheckForupdate()
 		} else if text != "" {
 			fmt.Fprint(out, "\033[1A\r\033[K")
 
