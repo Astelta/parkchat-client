@@ -97,6 +97,7 @@ If no config file is found, the client will ask for credentials and room name in
 
   * `/room <name>` → switch to another chat room
   * `/exit` → logout and quit the client
+  * `/update` → check for the latest version and update the app
 
 Example session:
 
@@ -114,7 +115,7 @@ Example session:
 
 ## 📝 Notes
 
-* The client requires a running chat server that provides:
+* The client requires a running [chat server](https://github.com/Astelta/parkchat-server) that provides:
 
   * **WebSocket endpoint** at `/ws/{room}`
   * **HTTP history endpoint** at `/history/{room}`
