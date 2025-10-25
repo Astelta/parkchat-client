@@ -1,10 +1,30 @@
 {
-  "nickname": "",
-  "password": "",
-  "start_room": "Ogolny",
-  "server_ip": "chat.astelta.world",
-  "message_prefix": "",
-  "timestamp_format": "02/01 15:04",
-  "prompt": "> ",
-  "websocket_port": "8080"
+"nickname": "",
+"password": "",
+"start_room": "Ogolny",
+"server_ip": "chat.astelta.world",
+"message_prefix": "",
+"timestamp_format": "02/01 15:04",
+"prompt": "> ",
+"websocket_port": "8080",
+"colors": {
+	"user": {
+		"nickname": "blue",
+		"text": "",
+		"date": "green",
+		"background": ""
+	},
+	"messages": {
+		"nickname": "yellow",
+		"text": "",
+		"date": "cyan",
+		"background": ""
+	},
+	"system": {
+		"nickname": "red",
+		"text": "brightCyan",
+		"date": "brightGreen",
+		"background": ""
+	}
+}
 }

@@ -9,7 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"runtime"
+	"path/filepath"
+	"runtime" // <- 1. DODANO IMPORT
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +19,13 @@ import (
 	"github.com/inconshreveable/go-update"
 	"github.com/mattn/go-colorable"
 )
+
+type Colors struct {
+	Nickname   string `json:"nickname"`
+	Text       string `json:"text"`
+	Date       string `json:"date"`
+	Background string `json:"background"`
+}
 
 // Config
 type Config struct {
@@ -29,6 +37,11 @@ type Config struct {
 	TimestampFormat string `json:"timestamp_format"`
 	Prompt          string `json:"prompt"`
 	Socket          string `json:"websocket_port"`
+	Colors          struct {
+		User     Colors `json:"user"`
+		Messages Colors `json:"messages"`
+		System   Colors `json:"system"`
+	} `json:"colors"`
 }
 
 // Message
@@ -58,7 +71,55 @@ type User struct {
 	Password string
 }
 
+type UsersMessageColors struct {
+	TextColor     string
+	NicknameColor string
+	DateColor     string
+}
+
 var out = colorable.NewColorableStdout()
+
+var fgMap = map[string]string{
+	"":              "",
+	"black":         "\033[30m",
+	"red":           "\033[31m",
+	"green":         "\033[32m",
+	"yellow":        "\033[33m",
+	"blue":          "\033[34m",
+	"magenta":       "\033[35m",
+	"cyan":          "\033[36m",
+	"white":         "\033[37m",
+	"brightBlack":   "\033[90m",
+	"brightRed":     "\033[91m",
+	"brightGreen":   "\033[92m",
+	"brightYellow":  "\033[93m",
+	"brightBlue":    "\033[94m",
+	"brightMagenta": "\033[95m",
+	"brightCyan":    "\033[96m",
+	"brightWhite":   "\033[97m",
+}
+
+var bgMap = map[string]string{
+	"":              "",
+	"black":         "\033[40m",
+	"red":           "\033[41m",
+	"green":         "\033[42m",
+	"yellow":        "\033[43m",
+	"blue":          "\033[44m",
+	"magenta":       "\033[45m",
+	"cyan":          "\033[46m",
+	"white":         "\033[47m",
+	"brightBlack":   "\033[100m",
+	"brightRed":     "\033[101m",
+	"brightGreen":   "\033[102m",
+	"brightYellow":  "\033[103m",
+	"brightBlue":    "\033[104m",
+	"brightMagenta": "\033[105m",
+	"brightCyan":    "\033[106m",
+	"brightWhite":   "\033[107m",
+}
+
+var reset = "\033[0m"
 var currentUser User
 var conn *websocket.Conn
 var reader *bufio.Reader
@@ -72,14 +133,15 @@ var serverIP = "chat.astelta.world"
 var timestampFormat = "15:04"
 var messagePrefix = ""
 var prompt = "> "
-var appVersion = "v1.0.2"
+var appVersion = "v1.0.3"
+var cfg Config
 
 func main() {
-
 	reader = bufio.NewReader(os.Stdin)
 
 	config, err := loadConfig()
 	if err == nil {
+		cfg = config
 		fmt.Println("✅ Successfully applied 'config.json'.")
 		currentUser = User{Nickname: config.Nickname, Password: config.Password}
 
@@ -106,7 +168,6 @@ func main() {
 		connectToRoom(chat_room)
 		go readMessages()
 		go displayLoop()
-
 	} else {
 		log.Println("❌ Error loading config.json:", err)
 		log.Println("You will have to type out your data in order to log in.")
@@ -134,20 +195,96 @@ func main() {
 	chatLoop()
 }
 
+func DefaultConfig() Config {
+	cfg := Config{
+		Nickname:        "",
+		Password:        "",
+		StartRoom:       "General",
+		ServerIP:        "chat.astelta.world",
+		MessagePrefix:   "",
+		TimestampFormat: "15:04",
+		Prompt:          "> ",
+		Socket:          "8080",
+	}
+	cfg.Colors.User = Colors{"blue", "", "green", ""}
+	cfg.Colors.Messages = Colors{"yellow", "", "cyan", ""}
+	cfg.Colors.System = Colors{"red", "brightCyan", "brightGreen", ""}
+	return cfg
+}
+
+// default if empty
+func mergeString(val, def string) string {
+	if val == "" {
+		return def
+	}
+	return val
+}
+
+func MergeConfig(user, def Config) Config {
+	user.Nickname = mergeString(user.Nickname, def.Nickname)
+	user.Password = mergeString(user.Password, def.Password)
+	user.StartRoom = mergeString(user.StartRoom, def.StartRoom)
+	user.ServerIP = mergeString(user.ServerIP, def.ServerIP)
+	user.MessagePrefix = mergeString(user.MessagePrefix, def.MessagePrefix)
+	user.TimestampFormat = mergeString(user.TimestampFormat, def.TimestampFormat)
+	user.Prompt = mergeString(user.Prompt, def.Prompt)
+	user.Socket = mergeString(user.Socket, def.Socket)
+
+	// users colors
+	user.Colors.User.Nickname = mergeString(user.Colors.User.Nickname, def.Colors.User.Nickname)
+
+	user.Colors.User.Text = mergeString(user.Colors.User.Text, def.Colors.User.Text)
+
+	user.Colors.User.Date = mergeString(user.Colors.User.Date, def.Colors.User.Date)
+
+	user.Colors.User.Background = mergeString(user.Colors.User.Background, def.Colors.User.Background)
+
+	// messages
+	user.Colors.Messages.Nickname = mergeString(user.Colors.Messages.Nickname, def.Colors.Messages.Nickname)
+
+	user.Colors.Messages.Text = mergeString(user.Colors.Messages.Text, def.Colors.Messages.Text)
+
+	user.Colors.Messages.Date = mergeString(user.Colors.Messages.Date, def.Colors.Messages.Date)
+
+	user.Colors.Messages.Background = mergeString(user.Colors.Messages.Background, def.Colors.Messages.Background)
+
+	// system
+	user.Colors.System.Nickname = mergeString(user.Colors.System.Nickname, def.Colors.System.Nickname)
+
+	user.Colors.System.Text = mergeString(user.Colors.System.Text, def.Colors.System.Text)
+
+	user.Colors.System.Date = mergeString(user.Colors.System.Date, def.Colors.System.Date)
+
+	user.Colors.System.Background = mergeString(user.Colors.System.Background, def.Colors.System.Background)
+
+	return user
+}
+
 func loadConfig() (Config, error) {
-	var config Config
-	file, err := os.Open("./config.json")
+	defaultCfg := DefaultConfig()
+
+	exePath, err := os.Executable()
 	if err != nil {
-		return config, fmt.Errorf("couldn't open the config: %w", err)
+		return defaultCfg, fmt.Errorf("couldn't resolve exe path: %w", err)
+	}
+	exeDir := filepath.Dir(exePath)
+	configPath := filepath.Join(exeDir, "config.json")
+
+	file, err := os.Open(configPath)
+	if err != nil {
+		return defaultCfg, nil
 	}
 	defer file.Close()
 
+	var userCfg Config
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&config)
-	if err != nil {
-		return config, fmt.Errorf("error decoding config: %w", err)
+	if err := decoder.Decode(&userCfg); err != nil {
+		return defaultCfg, fmt.Errorf("error decoding config: %w", err)
 	}
-	return config, nil
+
+	finalCfg := MergeConfig(userCfg, defaultCfg)
+
+	return finalCfg, nil
 }
 
 func showPrompt() {
@@ -174,6 +311,7 @@ func connectToRoom(room string) {
 	}
 
 	fmt.Printf("\n✅ Joined room '%s' as %s\n", room, currentUser.Nickname)
+	mu.Unlock() // Odblokuj wcześniej, aby pobieranie historii nie blokowało innych operacji
 
 	historyURL := fmt.Sprintf("http://%s:%s/history/%s", serverIP, port, room)
 	req, err := http.NewRequest("GET", historyURL, nil)
@@ -200,9 +338,10 @@ func connectToRoom(room string) {
 		for _, msg := range messages {
 			displayMessage(msg, false)
 		}
-		mu.Unlock()
+		// mu.Unlock() // Przeniesione wyżej
 	} else {
 		log.Printf("Error downloading history: %s\n", resp.Status)
+		// mu.Unlock() // Przeniesione wyżej
 	}
 }
 
@@ -214,12 +353,52 @@ func displayLoop() {
 
 func displayMessage(msg Message, clearPrompt bool) {
 
-	// timestamp w niebieskim
-	ts := fmt.Sprintf("\033[34m%s\033[0m", msg.Timestamp.Format(timestampFormat))
-	// nickname w zielonym
-	nick := fmt.Sprintf("\033[32m%s\033[0m", msg.Nickname)
+	// 4. POPRAWIONO TĘ FUNKCJĘ
+	// Używamy globalnej zmiennej 'reset' i usuwamy zbędne backslashe
 
-	fmt.Fprintf(out, "%s[%s] %s: %s\n", messagePrefix, ts, nick, msg.Content)
+	// timestamp (zostawiamy domyślny niebieski dla uproszczenia,
+	// chyba że chcesz go dodać do configa)
+	var ts string
+	var nick string
+	fmt.Fprint(out, "\r\033[K")
+	if msg.Type == "system" {
+		nick = fmt.Sprintf("%s%s%s%s",
+			fgMap[cfg.Colors.System.Nickname],
+			"System",
+			bgMap[cfg.Colors.System.Background], // <- Poprawiono na System.Background
+			reset)
+		ts = fmt.Sprintf("%s(%s)%s",
+			fgMap[cfg.Colors.System.Date],
+			msg.Timestamp.Format(timestampFormat),
+			reset) // <- Dodano reset
+		fmt.Fprintf(out, "%s%s %s: %s%s\n", messagePrefix, ts, nick, fgMap[cfg.Colors.System.Text], msg.Content)
+
+	} else if msg.Nickname == cfg.Nickname {
+		// Wiadomość od bieżącego użytkownika
+		nick = fmt.Sprintf("%s%s%s%s",
+			fgMap[cfg.Colors.User.Nickname],
+			msg.Nickname,
+			bgMap[cfg.Colors.User.Background],
+			reset) // <- Dodano reset
+		ts = fmt.Sprintf("%s(%s)%s",
+			fgMap[cfg.Colors.User.Date],
+			msg.Timestamp.Format(timestampFormat),
+			reset)
+		fmt.Fprintf(out, "%s%s %s: %s%s\n", messagePrefix, ts, nick, fgMap[cfg.Colors.User.Text], msg.Content)
+
+	} else {
+		// Wiadomość innego użytkownika
+		nick = fmt.Sprintf("%s%s%s%s", // <- Usunięto błędne '\\'
+			fgMap[cfg.Colors.Messages.Nickname],
+			msg.Nickname,
+			bgMap[cfg.Colors.Messages.Background],
+			reset) // <- Dodano reset
+		ts = fmt.Sprintf("%s(%s)%s",
+			fgMap[cfg.Colors.Messages.Date],
+			msg.Timestamp.Format(timestampFormat),
+			reset)
+		fmt.Fprintf(out, "%s%s %s: %s%s\n", messagePrefix, ts, nick, fgMap[cfg.Colors.Messages.Text], msg.Content)
+	}
 	if clearPrompt {
 		showPrompt()
 	}
@@ -283,7 +462,7 @@ func CheckForupdate() {
 				fmt.Print("I couldn't find a binary for your platform. Try compiling the source code from: https://github.com/Astelta/parkchat-client \n!")
 				return
 			case "N":
-				fmt.Print("Sure thing boss! \n")
+				fmt.Print("Sure thing boss!\n")
 				showPrompt()
 				return
 			default:
@@ -301,6 +480,8 @@ func doUpdate(url string) error {
 	defer resp.Body.Close()
 	err = update.Apply(resp.Body, update.Options{OldSavePath: ""})
 	if err != nil {
+		// Log błędu, jeśli wystąpi
+		log.Println("Update error:", err)
 	}
 	return err
 }
@@ -321,9 +502,14 @@ func readMessages() {
 			if websocket.IsCloseError(err,
 				websocket.CloseNormalClosure,
 				websocket.CloseGoingAway) || strings.Contains(err.Error(), "use of closed network connection") {
+				// Ciche wyjście, jeśli połączenie jest normalnie zamykane
 			} else {
 				log.Println("❌ Error reading from server:", err)
 			}
+			// Jeśli jest błąd, prawdopodobnie połączenie zostało zerwane,
+			// pętla powinna kontynuować i czekać na ponowne połączenie (jeśli jest taka logika)
+			// Na razie po prostu kontynuujemy, aby uniknąć spamowania logami
+			time.Sleep(1 * time.Second) // Zapobiegaj szybkiemu pętleniu w razie błędu
 			continue
 		}
 
@@ -336,12 +522,13 @@ func readMessages() {
 			}
 			displayChan <- msg
 		case websocket.PingMessage:
-			// automatycznie odpowiada pong
+			// gorilla/websocket automatycznie odpowiada na Pingi Pongiem,
+			// ale jeśli chcesz to zrobić ręcznie:
 			mu.Lock()
 			_ = currentConn.WriteMessage(websocket.PongMessage, nil)
 			mu.Unlock()
 		case websocket.PongMessage:
-			// możesz obsłużyć jeśli chcesz logować
+			// Otrzymano pong, można zresetować licznik timeoutu, jeśli jest
 		}
 	}
 }
@@ -353,6 +540,9 @@ func chatLoop() {
 
 		if text == "/exit" {
 			fmt.Println("👋 Logged out.")
+			if conn != nil {
+				conn.Close()
+			}
 			os.Exit(0)
 		} else if strings.HasPrefix(text, "/room ") {
 			fmt.Fprint(out, "\033[1A\r\033[K")
