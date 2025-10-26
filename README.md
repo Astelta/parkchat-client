@@ -57,13 +57,9 @@ Clone the repository and build the client:
   
 
 ```bash
-
 git clone https://github.com/Astelta/parkchat-client.git
-
 cd parkchat-client
-
 go build -o parkchat-client
-
 ```
 
   
@@ -108,13 +104,9 @@ This is done with a `POST` request to the `/register` endpoint.
   
 
 ```bash
-
 curl -X POST http://chat.astelta.world/register \
-
 -H "Content-Type: application/json" \
-
 -d '{"nickname":"YourNickname","password":"YourPassword"}'
-
 ```
 
   
@@ -124,15 +116,10 @@ curl -X POST http://chat.astelta.world/register \
   
 
 ```powershell
-
 Invoke-WebRequest -Uri "http://chat.astelta.world/register" `
-
 -Method POST `
-
 -Headers @{ "Content-Type" = "application/json" } `
-
 -Body '{"nickname":"YourNickname","password":"YourPassword"}'
-
 ```
 
   
