@@ -455,9 +455,8 @@ func CheckForupdate() {
 						fmt.Print("Update complete! The app will close now.")
 						time.Sleep(200)
 						os.Exit(0)
-					} else {
-						i++
 					}
+					i++
 				}
 				fmt.Print("I couldn't find a binary for your platform. Try compiling the source code from: https://github.com/Astelta/parkchat-client \n!")
 				return

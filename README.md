@@ -1,4 +1,4 @@
-# 🗨️ parkchat-client
+# 🗨️ parkchat-client [![CodeFactor](https://www.codefactor.io/repository/github/astelta/parkchat-client/badge/main)](https://www.codefactor.io/repository/github/astelta/parkchat-client/overview/main)
 
   
 
