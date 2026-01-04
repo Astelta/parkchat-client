@@ -1,4 +1,4 @@
-module parkchat-client
+module github.com/Astelta/parkchat-client
 
 go 1.24.6
 
