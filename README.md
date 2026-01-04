@@ -1,4 +1,4 @@
-# 🗨️ parkchat-client [![CodeFactor](https://www.codefactor.io/repository/github/astelta/parkchat-client/badge/main)](https://www.codefactor.io/repository/github/astelta/parkchat-client/overview/main)
+# 🗨️ parkchat-client [![CodeFactor](https://www.codefactor.io/repository/github/astelta/parkchat-client/badge/main)](https://www.codefactor.io/repository/github/astelta/parkchat-client/overview/main) [![GitHub release (latest by date)](https://img.shields.io/github/v/release/Astelta/parkchat-client)](https://github.com/Astelta/parkchat-client/releases) [![License](https://img.shields.io/github/license/Astelta/parkchat-client)](https://github.com/Astelta/parkchat-client/blob/main/LICENSE)
 
   
 
